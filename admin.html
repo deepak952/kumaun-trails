@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Kumaun Trails — Admin</title>
+<meta name="robots" content="noindex, nofollow" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div class="admin-wrap">
+
+  <!-- ================= LOGIN GATE ================= -->
+  <section id="admin-login" class="admin-login">
+    <div class="admin-login-card">
+      <div class="eyebrow">Kumaun Trails</div>
+      <h1 class="display-md" style="margin-top:8px;">Admin</h1>
+      <p class="body-md" style="margin-top:10px;">Enter the admin password to manage treks.</p>
+      <form id="login-form" style="margin-top:20px;">
+        <div class="field">
+          <label for="adminPassword">Password</label>
+          <input type="password" id="adminPassword" placeholder="Admin password" autocomplete="current-password" />
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Enter</button>
+        <div class="form-status" id="loginStatus"></div>
+      </form>
+    </div>
+  </section>
+
+  <!-- ================= ADMIN PANEL (hidden until unlocked) ================= -->
+  <main id="admin-panel" class="hidden">
+    <header class="admin-header">
+      <div class="wrap admin-header-inner">
+        <div>
+          <div class="eyebrow">Kumaun Trails</div>
+          <h1 class="display-md" style="margin-top:6px;">Manage Treks</h1>
+        </div>
+        <a href="index.html" class="btn btn-outline">View Site</a>
+      </div>
+    </header>
+
+    <div class="wrap admin-body">
+
+      <div class="admin-toolbar">
+        <button type="button" class="btn btn-primary" id="showAddFormBtn">+ Add New Trek</button>
+        <div id="listStatus" class="admin-list-status"></div>
+      </div>
+
+      <!-- Add/Edit form (hidden until "Add" or "Edit" clicked) -->
+      <div class="trek-form-card hidden" id="trekFormCard">
+        <h2 class="display-md" id="trekFormTitle">Add Trek</h2>
+        <form id="trekForm" style="margin-top:16px;">
+          <input type="hidden" id="trekId" />
+          <div class="field-row">
+            <div class="field">
+              <label for="trekName">Name *</label>
+              <input type="text" id="trekName" placeholder="e.g. Pindari Glacier Trek" required />
+            </div>
+            <div class="field">
+              <label for="trekRegion">Region</label>
+              <input type="text" id="trekRegion" placeholder="e.g. Bageshwar District" />
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="trekDifficulty">Difficulty *</label>
+              <select id="trekDifficulty">
+                <option value="Easy">Easy</option>
+                <option value="Moderate">Moderate</option>
+                <option value="Difficult">Difficult</option>
+                <option value="Strenuous">Strenuous</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="trekDuration">Duration (days)</label>
+              <input type="number" id="trekDuration" min="1" placeholder="e.g. 8" />
+            </div>
+          </div>
+          <div class="field">
+            <label for="trekElevation">Elevation profile (m) *</label>
+            <input type="text" id="trekElevation" placeholder="e.g. 1600,1780,2680,2210,2570,3260,3820" />
+            <div class="field-helper">Comma-separated altitudes along the route, low to high. At least two numbers (start, peak) — more points draw a fuller profile on the site.</div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="trekStartLabel">Start label</label>
+              <input type="text" id="trekStartLabel" placeholder="e.g. Song · 1,600m" />
+            </div>
+            <div class="field">
+              <label for="trekPeakLabel">Peak label</label>
+              <input type="text" id="trekPeakLabel" placeholder="e.g. Glacier · ~3,820m" />
+            </div>
+          </div>
+          <div class="field">
+            <label for="trekBlurb">Blurb</label>
+            <textarea id="trekBlurb" placeholder="Short description shown on the trek card"></textarea>
+          </div>
+
+          <div class="field" id="photosSection">
+            <label>Photos</label>
+            <div id="photoNewNotice" class="field-helper hidden">Save this trek first — you can add photos once it exists.</div>
+            <div id="photoManager" class="hidden">
+              <div id="photoThumbs" class="photo-thumbs"></div>
+              <input type="file" id="photoFileInput" accept="image/jpeg,image/png" multiple class="hidden" />
+              <button type="button" class="btn btn-outline mini-btn" id="addPhotoBtn">+ Add Photo</button>
+              <div id="photoUploadStatus" class="field-helper"></div>
+            </div>
+          </div>
+
+          <label class="checkbox-row" for="trekActive" style="margin-bottom:18px;">
+            <input type="checkbox" id="trekActive" checked />
+            <span>Active (visible on the live site)</span>
+          </label>
+          <div class="btn-row">
+            <button type="button" class="btn btn-outline" id="cancelFormBtn">Cancel</button>
+            <button type="submit" class="btn btn-primary" id="saveTrekBtn">Save Trek</button>
+          </div>
+          <div class="form-status" id="formStatus"></div>
+        </form>
+      </div>
+
+      <!-- Trek list -->
+      <div id="trekList" class="admin-trek-list"></div>
+
+    </div>
+  </main>
+
+</div>
+
+<script src="config.js"></script>
+<script src="admin.js"></script>
+</body>
+</html>
