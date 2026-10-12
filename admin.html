@@ -37,13 +37,20 @@
       <div class="wrap admin-header-inner">
         <div>
           <div class="eyebrow">Kumaun Trails</div>
-          <h1 class="display-md" style="margin-top:6px;">Manage Treks</h1>
+          <h1 class="display-md" style="margin-top:6px;" id="adminTitle">Manage Treks</h1>
         </div>
         <a href="index.html" class="btn btn-outline">View Site</a>
       </div>
     </header>
 
-    <div class="wrap admin-body">
+    <nav class="admin-tabs" aria-label="Admin sections">
+      <div class="wrap admin-tabs-inner" role="tablist">
+        <button type="button" class="admin-tab" role="tab" id="tabTreks" aria-selected="true">Treks</button>
+        <button type="button" class="admin-tab" role="tab" id="tabEnquiries" aria-selected="false">Enquiries <span class="admin-tab-count hidden" id="newCount"></span></button>
+      </div>
+    </nav>
+
+    <div class="wrap admin-body" id="treksView">
 
       <div class="admin-toolbar">
         <button type="button" class="btn btn-primary" id="showAddFormBtn">+ Add New Trek</button>
@@ -126,6 +133,20 @@
       <!-- Trek list -->
       <div id="trekList" class="admin-trek-list"></div>
 
+    </div>
+
+    <!-- ================= ENQUIRIES ================= -->
+    <div class="wrap admin-body hidden" id="enquiriesView">
+      <div class="enq-toolbar">
+        <div class="enq-filters" id="enqFilters" role="group" aria-label="Filter by status"></div>
+        <div class="enq-tools">
+          <label class="sr-only" for="enqSearch">Search enquiries</label>
+          <input type="search" id="enqSearch" class="enq-search" placeholder="Search name, phone, trek…" />
+          <button type="button" class="btn btn-outline mini-btn" id="enqRefresh">Refresh</button>
+        </div>
+      </div>
+      <div id="enqStatus" class="admin-list-status" aria-live="polite"></div>
+      <div id="enqList" class="enq-list"></div>
     </div>
   </main>
 

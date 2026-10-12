@@ -45,6 +45,7 @@
           loginSection.classList.add("hidden");
           panel.classList.remove("hidden");
           renderList();
+          loadEnquiries();
         } else {
           loginStatus.className = "form-status show err";
           loginStatus.textContent = (data && data.error) || "Wrong password.";
@@ -349,4 +350,143 @@
         listStatus.textContent = "Could not reach the server.";
       });
   }
+
+  // ---------------------------------------------------------------
+  // Tabs + Enquiries
+  // ---------------------------------------------------------------
+  var STATUSES = ["New", "Contacted", "Closed"];
+  var enquiries = [];
+  var enqLoaded = false;
+  var enqFilter = "All";
+
+  function showTab(name) {
+    var isEnq = name === "enquiries";
+    $("treksView").classList.toggle("hidden", isEnq);
+    $("enquiriesView").classList.toggle("hidden", !isEnq);
+    $("tabTreks").setAttribute("aria-selected", String(!isEnq));
+    $("tabEnquiries").setAttribute("aria-selected", String(isEnq));
+    $("adminTitle").textContent = isEnq ? "Enquiries" : "Manage Treks";
+    if (isEnq && !enqLoaded) loadEnquiries();
+  }
+  $("tabTreks").addEventListener("click", function () { showTab("treks"); });
+  $("tabEnquiries").addEventListener("click", function () { showTab("enquiries"); });
+
+  function loadEnquiries() {
+    $("enqStatus").textContent = "Loading enquiries…";
+    fetch(endpoint + "?action=adminEnquiries&password=" + encodeURIComponent(adminPassword))
+      .then(function (res) { return res.json(); })
+      .then(function (data) {
+        if (data && data.success) {
+          enquiries = data.enquiries;
+          enqLoaded = true;
+          $("enqStatus").textContent = "";
+          renderEnquiries();
+        } else if (data && data.ok) {
+          // Old Apps Script code answered with its generic ping: not redeployed yet.
+          $("enqStatus").textContent = "The backend doesn't know about enquiries yet. Redeploy the Apps Script as a new version (see SETUP.md), then press Refresh.";
+        } else {
+          $("enqStatus").textContent = (data && data.error) || "Could not load enquiries.";
+        }
+      })
+      .catch(function () { $("enqStatus").textContent = "Could not reach the server."; });
+  }
+
+  function whatsappDigits(phone) {
+    var d = String(phone).replace(/\D/g, "");
+    if (d.length === 10) d = "91" + d;
+    return d;
+  }
+
+  function formatWhen(iso) {
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return String(iso || "");
+    var mins = Math.round((Date.now() - d.getTime()) / 60000);
+    var rel = mins < 1 ? "just now" : mins < 60 ? mins + " min ago" : mins < 1440 ? Math.round(mins / 60) + " h ago" : Math.round(mins / 1440) + " d ago";
+    return rel + " · " + d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+  }
+
+  function renderFilters() {
+    var counts = { All: enquiries.length };
+    STATUSES.forEach(function (s) { counts[s] = 0; });
+    enquiries.forEach(function (e) { if (counts[e.status] !== undefined) counts[e.status]++; });
+    $("enqFilters").innerHTML = ["All"].concat(STATUSES).map(function (s) {
+      return '<button type="button" class="enq-chip" data-filter="' + s + '" aria-pressed="' + (enqFilter === s) + '">' + s + ' <span>' + counts[s] + '</span></button>';
+    }).join("");
+    var badge = $("newCount");
+    badge.textContent = counts.New;
+    badge.classList.toggle("hidden", counts.New === 0);
+  }
+
+  function renderEnquiries() {
+    renderFilters();
+    var q = $("enqSearch").value.trim().toLowerCase();
+    var rows = enquiries.filter(function (e) {
+      if (enqFilter !== "All" && e.status !== enqFilter) return false;
+      if (!q) return true;
+      return [e.full_name, e.phone, e.email, e.trek_interest, e.message].join(" ").toLowerCase().indexOf(q) !== -1;
+    });
+    var list = $("enqList");
+    if (!rows.length) {
+      list.innerHTML = '<p class="body-md">' + (enquiries.length ? "No enquiries match this filter." : "No enquiries yet. They appear here as soon as someone submits the form on the site.") + "</p>";
+      return;
+    }
+    list.innerHTML = rows.map(function (e) {
+      var wa = whatsappDigits(e.phone);
+      var details = [];
+      if (e.preferred_month) details.push("<span><b>When</b> " + escapeHtml(e.preferred_month) + "</span>");
+      if (e.group_size) details.push("<span><b>Group</b> " + escapeHtml(e.group_size) + "</span>");
+      return '<article class="enq-card enq-' + e.status.toLowerCase() + '">' +
+        '<div class="enq-head">' +
+          '<div><h3 class="enq-name">' + escapeHtml(e.full_name) + '</h3>' +
+          '<div class="enq-when">' + escapeHtml(formatWhen(e.created_at)) + '</div></div>' +
+          '<label class="sr-only" for="st' + e.row + '">Status</label>' +
+          '<select class="enq-status" id="st' + e.row + '" data-row="' + e.row + '">' +
+            STATUSES.map(function (s) { return '<option' + (s === e.status ? " selected" : "") + ">" + s + "</option>"; }).join("") +
+          "</select>" +
+        "</div>" +
+        '<div class="enq-trek">' + escapeHtml(e.trek_interest) + "</div>" +
+        (details.length ? '<div class="enq-details">' + details.join("") + "</div>" : "") +
+        (e.message ? '<p class="enq-message">' + escapeHtml(e.message) + "</p>" : "") +
+        '<div class="enq-contact">' +
+          '<span class="enq-phone mono-stat">' + escapeHtml(e.phone) + "</span>" +
+          (e.email ? '<span class="enq-email">' + escapeHtml(e.email) + "</span>" : "") +
+          '<a class="btn btn-outline mini-btn" href="https://wa.me/' + wa + '" target="_blank" rel="noopener">WhatsApp</a>' +
+          '<a class="btn btn-outline mini-btn" href="tel:' + escapeHtml(e.phone.replace(/[^\d+]/g, "")) + '">Call</a>' +
+        "</div>" +
+      "</article>";
+    }).join("");
+  }
+
+  $("enqFilters").addEventListener("click", function (ev) {
+    var b = ev.target.closest("[data-filter]");
+    if (!b) return;
+    enqFilter = b.getAttribute("data-filter");
+    renderEnquiries();
+  });
+  $("enqSearch").addEventListener("input", renderEnquiries);
+  $("enqRefresh").addEventListener("click", loadEnquiries);
+
+  $("enqList").addEventListener("change", function (ev) {
+    var sel = ev.target.closest(".enq-status");
+    if (!sel) return;
+    var row = parseInt(sel.getAttribute("data-row"), 10);
+    var item = enquiries.filter(function (e) { return e.row === row; })[0];
+    if (!item) return;
+    var previous = item.status, next = sel.value;
+    item.status = next;
+    $("enqStatus").textContent = "Saving…";
+    fetch(endpoint, { method: "POST", body: JSON.stringify({ action: "updateEnquiryStatus", adminPassword: adminPassword, row: row, phone: item.phone, status: next }) })
+      .then(function (res) { return res.json(); })
+      .then(function (data) {
+        if (data && data.success) { $("enqStatus").textContent = ""; renderEnquiries(); return; }
+        item.status = previous;
+        $("enqStatus").textContent = (data && data.error) || "Could not save the status.";
+        renderEnquiries();
+      })
+      .catch(function () {
+        item.status = previous;
+        $("enqStatus").textContent = "Could not reach the server. Status was not saved.";
+        renderEnquiries();
+      });
+  });
 })();
