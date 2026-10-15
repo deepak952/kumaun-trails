@@ -7,6 +7,7 @@
   var endpoint = config.SUBMIT_ENDPOINT || "";
   var adminPassword = null; // kept in memory only, never persisted
   var treks = [];
+  var role = "admin"; // "admin" or "ca" (accountant, read-only CA report only)
 
   var loginSection = $("admin-login");
   var panel = $("admin-panel");
@@ -16,6 +17,15 @@
   var formCard = $("trekFormCard");
   var formTitle = $("trekFormTitle");
   var formStatus = $("formStatus");
+
+  window.KT_ADMIN = {
+    $: $,
+    endpoint: endpoint,
+    escapeHtml: escapeHtml,
+    getPassword: function () { return adminPassword; },
+    getRole: function () { return role; },
+    getTreks: function () { return treks; }
+  };
 
   function isConfigured() {
     return endpoint && endpoint.indexOf("PASTE_YOUR_APPS_SCRIPT") === -1;
@@ -36,26 +46,45 @@
     }
 
     loginStatus.className = "form-status";
+    function fail(msg) { loginStatus.className = "form-status show err"; loginStatus.textContent = msg; }
     fetch(endpoint + "?action=adminTreks&password=" + encodeURIComponent(pw))
       .then(function (res) { return res.json(); })
       .then(function (data) {
         if (data && data.success) {
-          adminPassword = pw;
-          treks = data.treks;
+          adminPassword = pw; role = "admin"; treks = data.treks;
           loginSection.classList.add("hidden");
           panel.classList.remove("hidden");
           renderList();
           loadEnquiries();
-        } else {
-          loginStatus.className = "form-status show err";
-          loginStatus.textContent = (data && data.error) || "Wrong password.";
+          return;
         }
+        // Not the admin password: it may be the accountant's.
+        return fetch(endpoint + "?action=caBookings&password=" + encodeURIComponent(pw))
+          .then(function (res) { return res.json(); })
+          .then(function (ca) {
+            if (ca && ca.success) {
+              adminPassword = pw; role = "ca";
+              loginSection.classList.add("hidden");
+              panel.classList.remove("hidden");
+              applyRole();
+            } else {
+              fail((data && data.error) || "Wrong password.");
+            }
+          });
       })
-      .catch(function () {
-        loginStatus.className = "form-status show err";
-        loginStatus.textContent = "Could not reach the server. Check your connection.";
-      });
+      .catch(function () { fail("Could not reach the server. Check your connection."); });
   });
+
+  // The accountant only gets the Finance > CA report.
+  function applyRole() {
+    if (role !== "ca") return;
+    $("tabTreks").classList.add("hidden");
+    $("tabEnquiries").classList.add("hidden");
+    $("subBookings").classList.add("hidden");
+    document.querySelector(".fin-subtabs").classList.add("hidden");
+    showTab("finance");
+    $("subCa").click();
+  }
 
   // ---------------------------------------------------------------
   // Trek list
@@ -359,17 +388,22 @@
   var enqLoaded = false;
   var enqFilter = "All";
 
+  var VIEWS = { treks: "treksView", enquiries: "enquiriesView", finance: "financeView" };
+  var TABS = { treks: "tabTreks", enquiries: "tabEnquiries", finance: "tabFinance" };
+  var TITLES = { treks: "Manage Treks", enquiries: "Enquiries", finance: "Finance" };
+
   function showTab(name) {
-    var isEnq = name === "enquiries";
-    $("treksView").classList.toggle("hidden", isEnq);
-    $("enquiriesView").classList.toggle("hidden", !isEnq);
-    $("tabTreks").setAttribute("aria-selected", String(!isEnq));
-    $("tabEnquiries").setAttribute("aria-selected", String(isEnq));
-    $("adminTitle").textContent = isEnq ? "Enquiries" : "Manage Treks";
-    if (isEnq && !enqLoaded) loadEnquiries();
+    Object.keys(VIEWS).forEach(function (k) {
+      $(VIEWS[k]).classList.toggle("hidden", k !== name);
+      $(TABS[k]).setAttribute("aria-selected", String(k === name));
+    });
+    $("adminTitle").textContent = role === "ca" && name === "finance" ? "Accountant Report" : TITLES[name];
+    if (name === "enquiries" && !enqLoaded) loadEnquiries();
+    if (name === "finance" && window.KT_FINANCE) window.KT_FINANCE.open();
   }
   $("tabTreks").addEventListener("click", function () { showTab("treks"); });
   $("tabEnquiries").addEventListener("click", function () { showTab("enquiries"); });
+  $("tabFinance").addEventListener("click", function () { showTab("finance"); });
 
   function loadEnquiries() {
     $("enqStatus").textContent = "Loading enquiries…";

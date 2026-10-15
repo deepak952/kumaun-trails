@@ -47,6 +47,7 @@
       <div class="wrap admin-tabs-inner" role="tablist">
         <button type="button" class="admin-tab" role="tab" id="tabTreks" aria-selected="true">Treks</button>
         <button type="button" class="admin-tab" role="tab" id="tabEnquiries" aria-selected="false">Enquiries <span class="admin-tab-count hidden" id="newCount"></span></button>
+        <button type="button" class="admin-tab" role="tab" id="tabFinance" aria-selected="false">Finance</button>
       </div>
     </nav>
 
@@ -148,11 +149,96 @@
       <div id="enqStatus" class="admin-list-status" aria-live="polite"></div>
       <div id="enqList" class="enq-list"></div>
     </div>
+
+    <!-- ================= FINANCE ================= -->
+    <div class="wrap admin-body hidden" id="financeView">
+      <div class="fin-subtabs" role="tablist" aria-label="Finance sections">
+        <button type="button" class="fin-subtab" role="tab" id="subBookings" aria-selected="true">Bookings</button>
+        <button type="button" class="fin-subtab" role="tab" id="subCa" aria-selected="false">CA</button>
+      </div>
+
+      <!-- Bookings (admin only) -->
+      <div id="bookingsPane">
+        <div class="admin-toolbar">
+          <button type="button" class="btn btn-primary" id="bkAddBtn">+ Add Booking</button>
+          <div id="bkStatus" class="admin-list-status" aria-live="polite"></div>
+        </div>
+
+        <div class="trek-form-card hidden" id="bkFormCard">
+          <h2 class="display-md" id="bkFormTitle">Add Booking</h2>
+          <form id="bkForm" style="margin-top:16px;" novalidate>
+            <input type="hidden" id="bkId" />
+            <div class="field-row">
+              <div class="field"><label for="bkTrek">Trek *</label><select id="bkTrek"></select></div>
+              <div class="field"><label for="bkDate">Booking date</label><input type="date" id="bkDate" /></div>
+            </div>
+            <div class="field-row">
+              <div class="field"><label for="bkName">Client name *</label><input type="text" id="bkName" placeholder="Full name" /></div>
+              <div class="field"><label for="bkPhone">Client phone</label><input type="tel" id="bkPhone" placeholder="+91 XXXXX XXXXX" /></div>
+            </div>
+            <div class="field-row">
+              <div class="field"><label for="bkTravel">Travel date</label><input type="date" id="bkTravel" /></div>
+              <div class="field"><label for="bkGroup">Group size</label><input type="number" id="bkGroup" min="1" value="1" /></div>
+            </div>
+            <div class="field-row">
+              <div class="field"><label for="bkSelling">Selling amount, excl. GST (₹) *</label><input type="number" id="bkSelling" min="0" step="0.01" placeholder="e.g. 24000" /></div>
+              <div class="field"><label for="bkGstRate">GST rate (%)</label><input type="number" id="bkGstRate" min="0" max="100" step="0.01" value="5" />
+                <div class="field-helper">Confirm the correct rate with your CA.</div></div>
+            </div>
+            <div class="field-row">
+              <div class="field"><label for="bkCost">Cost to you (₹)</label><input type="number" id="bkCost" min="0" step="0.01" placeholder="Guides, permits, transport, food" /></div>
+              <div class="field"><label for="bkPaid">Amount received, incl. GST (₹)</label><input type="number" id="bkPaid" min="0" step="0.01" placeholder="0" /></div>
+            </div>
+            <div class="field-row">
+              <div class="field"><label for="bkMode">Payment mode</label>
+                <select id="bkMode"><option>UPI</option><option>Cash</option><option>Bank transfer</option><option>Card</option><option>Other</option></select></div>
+              <div class="field"><label for="bkStatusSel">Status</label>
+                <select id="bkStatusSel"><option>Confirmed</option><option>Completed</option><option>Cancelled</option></select></div>
+            </div>
+            <div class="fin-preview" id="bkPreview" aria-live="polite"></div>
+            <div class="field"><label for="bkNotes">Notes (private, hidden from the CA)</label><textarea id="bkNotes" placeholder="Anything to remember about this booking"></textarea></div>
+            <div class="btn-row">
+              <button type="button" class="btn btn-outline" id="bkCancelBtn">Cancel</button>
+              <button type="submit" class="btn btn-primary" id="bkSaveBtn">Save Booking</button>
+            </div>
+            <div class="form-status" id="bkFormStatus"></div>
+          </form>
+        </div>
+
+        <div id="bkList"></div>
+      </div>
+
+      <!-- CA report (admin and accountant) -->
+      <div id="caPane" class="hidden">
+        <div class="enq-toolbar">
+          <div class="enq-filters" id="caPresets" role="group" aria-label="Date range"></div>
+          <div class="enq-tools">
+            <label class="sr-only" for="caTrek">Trek</label>
+            <select id="caTrek" class="enq-status"><option value="All">All treks</option></select>
+            <button type="button" class="btn btn-outline mini-btn" id="caRefresh">Refresh</button>
+          </div>
+        </div>
+        <div class="fin-custom hidden" id="caCustom">
+          <label for="caFrom">From</label><input type="date" id="caFrom" class="enq-search" />
+          <label for="caTo">To</label><input type="date" id="caTo" class="enq-search" />
+        </div>
+        <div class="fin-note">Client names, phone numbers and notes are hidden here. Cancelled bookings are left out.</div>
+        <div id="caSummary" class="fin-summary"></div>
+        <div class="fin-exports">
+          <button type="button" class="btn btn-outline mini-btn" id="caExcel">Download Excel</button>
+          <button type="button" class="btn btn-outline mini-btn" id="caBulk">Download all invoices (PDF)</button>
+          <span id="caStatus" class="admin-list-status" aria-live="polite"></span>
+        </div>
+        <div id="caReport"></div>
+        <div id="caOrders"></div>
+      </div>
+    </div>
   </main>
 
 </div>
 
 <script src="config.js"></script>
 <script src="admin.js"></script>
+<script src="finance.js"></script>
 </body>
 </html>
